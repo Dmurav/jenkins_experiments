@@ -1,32 +1,32 @@
-node('docker') {
-  stage('Poll') {
-    checkout scm
-  }
-  stage('Build & Unit test'){
-    sh 'mvn clean verify -DskipITs=true';
-    junit '**/target/surefire-reports/TEST-*.xml'
-    archive 'target/*.jar'
-  }
-  stage('Static Code Analysis'){
-    sh 'mvn clean verify sonar:sonar -Dsonar.projectName=example-project
-    -Dsonar.projectKey=example-project -Dsonar.projectVersion=$BUILD_NUMBER';
-  }
-  stage ('Integration Test'){
-    sh 'mvn clean verify -Dsurefire.skip=true';
-    junit '**/target/failsafe-reports/TEST-*.xml'
-    archive 'target/*.jar'
-  }
-  stage ('Publish'){
-    def server = Artifactory.server 'Default Artifactory Server'
-    def uploadSpec = """{
-      "files": [
-        {
-          "pattern": "target/hello-0.0.1.war",
-          "target": "example-project/${BUILD_NUMBER}/",
-          "props": "Integration-Tested=Yes;Performance-Tested=No"
+pipeline {
+    agent any
+
+    tools {
+        // Install the Maven version configured as "M3" and add it to the path.
+        maven "M3"
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                // Get some code from a GitHub repository
+                git 'https://github.com/jglick/simple-maven-project-with-tests.git'
+
+                // Run Maven on a Unix agent.
+                sh "mvn -Dmaven.test.failure.ignore=true clean package"
+
+                // To run Maven on a Windows agent, use
+                // bat "mvn -Dmaven.test.failure.ignore=true clean package"
+            }
+
+            post {
+                // If Maven was able to run the tests, even if some of the test
+                // failed, record the test results and archive the jar file.
+                success {
+                    junit '**/target/surefire-reports/TEST-*.xml'
+                    archiveArtifacts 'target/*.jar'
+                }
+            }
         }
-      ]
-    }"""
-    server.upload(uploadSpec)
-  }
+    }
 }
