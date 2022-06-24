@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage("Build") {
             steps {
-                git 'https://github.com/Dmurav/gatling_genkins.git'
+                git branch: 'main', credentialsId: 'github_credentials', url: 'https://github.com/Dmurav/gatling_genkins.git'
                 sh 'mvn -B clean package'
             }
         }
