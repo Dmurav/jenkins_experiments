@@ -3,6 +3,7 @@ pipeline {
     stages {
         stage("Build Maven") {
             steps {
+                git 'https://github.com/Dmurav/gatling_genkins.git'
                 sh 'mvn -B clean package'
             }
         }
